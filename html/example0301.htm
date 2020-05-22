@@ -24,6 +24,7 @@ function calcDI() {
   if (ck2 == true ) return("2");
   if (ck3 == true ) return("3");
   if (ck4 == true ) return("4");
+  return("0");
 }
 //コマンド判定ボタン。フォーカス確認のため正常時は音を出す
 function t3220() {
@@ -106,22 +107,43 @@ function t3228() {
 </head><body>
 <p>HID example3 v1.1</p>
 <form method="POST" name="F1" action=#>
-コマンド<input type="text" name="IM1" id="IM1" inputmode="url" size=5 tabIndex="1">
-<input type="button"  tabIndex="2" value="コマンド判定" onclick="return t3220()"><br><br>
 データ種別
 <input type="radio" name="DT" id="DT1" tabIndex="41" checked>温度
 <input type="radio" name="DT" id="DT2" tabIndex="42">湿度
 <input type="radio" name="DT" id="DT3" tabIndex="43">気圧
-<input type="radio" name="DT" id="DT4" tabIndex="44">不快指数
+<input type="radio" name="DT" id="DT4" tabIndex="44">不快指数 
 <br>
 ___ラベル_____データ____単位<br>
 <input type="text" name="LB21" id="LB21" tabIndex="51" size=10>
 <input type="text" name="NM21" id="NAME21" tabIndex="52" size=8>
 <input type="text" name="UQ21" id="UNIT21" tabIndex="53" size=5>
-<br>
-<input type="button"  tabIndex="54" value="実行" onclick="t3228()">
-<br><br>
+<br><br>- - - - - - - - - - - - - - - - - - - - - - - -<br>
+コマンド<input type="text" name="IM1" id="IM1" inputmode="url" size=5 tabIndex="1">
+<input type="button"  tabIndex="2" value="コマンド判定" onclick="return t3220()">
+<input type="button"  tabIndex="54" value="実行" onclick="t3228()"><br>
 <input type="text" name="KUDARI" id="KUDARI" size=3 tabIndex="81">
 <input type="text" name="IM2" id="IM2" size=3 tabIndex="82">
 <input type="button"  tabIndex="83" value="下り命令" onclick="t3227()"><br>
+<script type="text/javascript">
+<!-- 
+//ラジオボタンをグローバルで定義
+var cck1=document.getElementById("DT1");
+var cck2=document.getElementById("DT2");
+var cck3=document.getElementById("DT3");
+var cck4=document.getElementById("DT4");
+//選択状態が変わったらフォーカスを移動する
+cck1.addEventListener('change', function() {
+  document.F1.IM1.focus();
+}, false);
+cck2.addEventListener('change', function() {
+  document.F1.IM1.focus();
+}, false);
+cck3.addEventListener('change', function() {
+  document.F1.IM1.focus();
+}, false);
+cck4.addEventListener('change', function() {
+  document.F1.IM1.focus();
+}, false);
+// -->
+</script>
 </form></body></html>

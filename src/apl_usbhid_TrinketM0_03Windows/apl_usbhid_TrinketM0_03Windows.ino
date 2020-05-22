@@ -1,12 +1,10 @@
 /*
  *公開第三回）双方向リアルタイムモニター 2020/05/08
  * 下りデータは最大８bitだが、今回は4bitとした。
+ * 2020/05/22 フォーカス異常改善
  */
-// WindowsPC用,MAc用
-//どちらか選択せよ -------------------------------------------
+// WindowsPC用
 #define USBHOST_WINPC
-//#define USBHOST_MAC
-
 //環境に合わせて内容を確認または修正すること　ーーここから -----------------------------
 //①BME280 I2Cアドレスの設定　（0x76 or 0x77 のどちらか）
 #define BME280DEVADDR 0x76
@@ -22,6 +20,8 @@ String g_url_string = "http'//localhost/example0301.htm"; //localhost用
 
 #define WCS_DELAY_T1 150 //T1 ブラウザー応答時間150
 #define WCS_DELAY_GAMEN 3000  //URLたたいてから画面が表示されるまで待つ
+#define WCS_BITREAD_MAXCOUNT 5  //bit read のリトライ回数上限
+#define WCS_SWWAIT_MAXCOUNT 30  //sw押下待ちのリトライ回数上限 30秒
 #include <Wire.h>
 #include <ZeroTimer.h>
 #include <SparkFunBME280.h>
@@ -38,6 +38,7 @@ boolean g_I2CNormal;
 volatile int g_i; //timerカウント
 volatile boolean g_high_spead;
 int g_dataSyubetu = 1; //1-4。初期値は温度
+int g_retry_count;
 //
 //
 //
@@ -45,6 +46,7 @@ void setup(){
   g_pass = 1;
   g_i = 0;
   g_high_spead = 0;
+  g_retry_count = 0;
   pinMode(LED_PIN,OUTPUT);
   pinMode(SW_PIN, INPUT_PULLUP);
   myToneM.begin(TONE_PIN, 8);  //8bit
@@ -57,9 +59,18 @@ void setup(){
   else                              g_I2CNormal = true;
   //
   sub_fw_Blink(LED_PIN, 3, 50); //動き始めたことを知らせる
-  digitalWrite(LED_PIN, HIGH);  //明確に点灯
   //
-  while (sub_fw_SWcheck(SW_PIN) == 0); //SWが押されるまで待つ
+  //SWが押されるまで待つ 10msec x 100 = 1sec でエラーとする
+  boolean sw_pushed = false;
+  for (int j = 0; j< (WCS_SWWAIT_MAXCOUNT * 100); j++) {  
+    if (sub_fw_SWcheck(SW_PIN) == 1) {
+      sw_pushed = true;
+      break;
+    }
+    delay(10);
+  }
+  if (sw_pushed == false )
+    while(1) sub_fw_Blink(LED_PIN, 10, 50);  //LED点滅し続ける
   
   // 音量UPのため、HIDデバイスを定義する
   myVolumeC.begin();
@@ -122,21 +133,21 @@ void sub_proc() {
     sub_out_kbd(20); //Inqu
     if (sub_check_tone()) s_command = 21;
     else s_command = 90;
+    g_retry_count = 0; //次回のために初期化  
     myToneM.clear();
   } else if ((s_command >= 21) && (s_command <= 28)) {
     //制御情報を1ビットつづ受けとる。８ビット
     sub_out_kbd(s_command); //Inq no1 to no8
-    if (s_command == 21) {
-    }
     g_high_spead = 1; //問い合わせは待ち時間なしで動かす。本当はS_command==21のみでいい
     if (myToneM.readBit(s_command - 20)) {
       //正常
-      s_command = s_command+1;   
+      s_command = s_command+1;
+      g_retry_count = 0; //次回のために初期化  
       //8bitは無駄なので、4bitで次へ
       if (s_command == 25 ) s_command = 29; 
     } else {
       //異常時は同じビットを再送要求する
-      ;
+      if (g_retry_count++ >= WCS_BITREAD_MAXCOUNT) s_command = 90; //リトライオーバーで異常へ
     }
   } else if (s_command == 29) { 
     g_high_spead = 0; //問い合わせは待ち時間なしで動かすモードを終了する
@@ -212,10 +223,11 @@ void sub_out_kbd(int8_t p_ctl) {
     sub_moji_tab("e");
     sub_kbd_strok(KEY_RETURN);
   } else if (p_ctl == 90) {
-    //URLフィールドへ移動+Enter+Tab
-    //sub_kbd_toCommandF();
-    //処理変更。URLを再入力する
+    //OSに依存せず、initurl()に統一する
+    //URLを再入力する
     sub_initurl();
+    //URLフィールドへ移動+Tabでフォーカスをコマンドフィールドへ移す
+    //sub_kbd_toCommandF();
   } else {
     sub_moji_tab("error");
     sub_kbd_strok(KEY_RETURN);
@@ -224,13 +236,16 @@ void sub_out_kbd(int8_t p_ctl) {
 //
 //50msec*5回繰り返す。音が拾えたらrc=trueとなる
 boolean sub_check_tone(void) {
-  for (int j=0; j<5; j++) {
+  int j;
+  
+  for (j=0; j<5; j++) {
     delay(50);   
     if (myToneM.judgeTone()) return true;
   }
   //エラー検知
-  sub_fw_Blink(LED_PIN, 9, 50); //動き始めたことを知らせる
-  return false; //50msecX5=250msecでも音が鳴らないため、エラーを返す    
+  // (50msec x 2(on/OFF) x 30回)= 3sec 
+  sub_fw_Blink(LED_PIN, 10, 50);
+  return false; //50msecX5=250msecでも音が鳴らないため、3秒点滅後、エラーを返す    
 }
 //
 //アプリ画面を呼び出すURLを出力する
@@ -371,9 +386,9 @@ uint8_t sub_fw_SWcheck(uint8_t p_swpin) {
 //p_timesは最大255とする
 void sub_fw_Blink(uint8_t p_ledpin, byte p_times , int p_wait){
   for (byte i=0; i< p_times; i++){
-    digitalWrite(p_ledpin, HIGH);
-    delay (p_wait);
     digitalWrite(p_ledpin, LOW);
+    delay (p_wait);
+    digitalWrite(p_ledpin, HIGH); //点灯で終わる
     delay (p_wait);
   }
 }

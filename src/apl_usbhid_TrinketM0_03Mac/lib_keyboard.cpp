@@ -66,17 +66,22 @@ void sub_kbd_preURL() {
 //フォーカスずれのため、コマンドフィールドに戻る
 void sub_kbd_toCommandF() {
   //Windows10 + Edge で、CTRL+lが効かない。原因不明
+  //ロジックは残すが、Windows10では、この関数は呼ばれない
   if (g_keyboard_OSType == 1) {
     //Windows用
     //Control-KEY + l　でURLフィールドへ移動
     sub_kbd_withmodifire(KEY_LEFT_CTRL, 'l');
+    //Enterがないと、ブラウザーの仕様にしたがってフォーカス移動するため、
+    //Enterを入れた。画面再描画になる。
+    //Enterが必要なのはEdge。Chromeでは不要だが区別がつなかいので
+    //ブラウザーの種類に関係なくEnterを追加した。
+    delay(WCS_DELAY_T1);
+    sub_kbd_strok(KEY_RETURN);
   } else {
     //Mac用
     //ブラウザーが表示されていること。URL入力エリアをフォーカスする
     sub_kbd_withmodifire(KEY_LEFT_GUI, 'l');
   }
-  delay(WCS_DELAY_T1);
-  sub_kbd_strok(KEY_RETURN);
   delay(WCS_DELAY_T1);
   sub_kbd_strok(KEY_TAB);
   delay(WCS_DELAY_T1);
