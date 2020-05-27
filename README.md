@@ -4,7 +4,7 @@ Arduinoを USB/HIDデバイスとして動作させるアプリ。
 マイコンから定期的に、BME280の測定値のうち、ブラウザーからの指示に基づいた項目を表示するリアルタイムモニター。
 ブラウザーからの指示は、Tone(音）を使って４bit/8bitの値をマイコンに送信する。
 
-詳細はQiita参照 https://qiita.com/pronechia/private/d44b47b4c9667cea24ac
+詳細はQiita参照 https://qiita.com/pronechia/items/d44b47b4c9667cea24ac
 
 
 注意）
