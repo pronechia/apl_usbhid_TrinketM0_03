@@ -1,3 +1,5 @@
+※2020/06/17 音のON/OFF判定強化
+
 Arduinoを USB/HIDデバイスとして動作させるアプリ。
 ボードは、Arduino互換の Adafruit Trinket M0　を使用する。
 マイコンとブラウザーの間の双方向通信処理を実現する。
