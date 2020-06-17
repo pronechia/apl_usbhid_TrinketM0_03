@@ -7,7 +7,7 @@
 //pin番号保持、閾値を決める、clearは別関数とした
 int ToneManager::begin(uint8_t tonePin , uint8_t len) {
   toneDevicePin =tonePin;
-  if ((len < 1) || (len > TONE_DEFAULT_THRESH)) bitLen = TONE_DEFAULT_LEN;
+  if ((len < 1) || (len > TONE_DEFAULT_LEN)) bitLen = TONE_DEFAULT_LEN;
   else bitLen = len;
   thresholdLevel = TONE_DEFAULT_THRESH;
   return 0;
@@ -21,7 +21,7 @@ boolean ToneManager::readBit(uint8_t n) {
   uint8_t j;
   
   //音のON/OFFからbitを判定しn番目にセット
-  if (n < 1 or n > bitLen ) return 0;
+  if (n < 1 || n > bitLen ) return false;
   //
   //5msec x 40=200msec loop
   boolean w_found = false;

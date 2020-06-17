@@ -2,6 +2,7 @@
  *公開第三回）双方向リアルタイムモニター 2020/05/08
  * 下りデータは最大８bitだが、今回は4bitとした。
  * 2020/05/22 フォーカス異常改善
+ * 2020/06/16 Tone ON/OFF判定強化
  */
 // Mac用
 #define USBHOST_MAC
@@ -237,13 +238,20 @@ void sub_out_kbd(int8_t p_ctl) {
 //50msec*5回繰り返す。音が拾えたらrc=trueとなる
 boolean sub_check_tone(void) {
   int j;
-  
+
+  //はじめは音が鳴っていないことを確認する
+  if (myToneM.judgeTone()) {
+    // (50msec x 2(on/OFF) x 50回)= 5sec 
+    sub_fw_Blink(LED_PIN, 50, 50);
+    return false;
+  }
+  //
   for (j=0; j<5; j++) {
     delay(50);   
     if (myToneM.judgeTone()) return true;
   }
   //エラー検知
-  // (50msec x 2(on/OFF) x 30回)= 3sec 
+  // (50msec x 2(on/OFF) x 10回)= 1sec 
   sub_fw_Blink(LED_PIN, 10, 50);
   return false; //50msecX5=250msecでも音が鳴らないため、3秒点滅後、エラーを返す    
 }
@@ -329,6 +337,7 @@ void sub_out_val(int p_datasyubetu, char* p_1 ,char* p_2, char* p_3) {
     w_temp = g_dataSyubetu;
     sprintf(w_buf, "%d", w_temp);
     strcpy(p_2, w_buf);
+    strcpy(p_3, "ERROR");  //単位欄
   }
 }
 //
